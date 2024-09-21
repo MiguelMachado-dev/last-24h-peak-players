@@ -9,8 +9,8 @@ import {
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [guess, setGuess] = useState<number>(0);
-  const [accuracy, setAccuracy] = useState<number>(0);
+  const [guess, setGuess] = useState<number>(NaN);
+  const [accuracy, setAccuracy] = useState<number>(NaN);
   const [playerCount, setPlayerCount] = useState<number>(0);
   const [gameName, setGameName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -21,14 +21,13 @@ export default function Home() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGuess(parseInt(e.target.value));
-    setAccuracy(0);
+    const value = e.target.value === "" ? NaN : parseInt(e.target.value);
+    setGuess(value);
+    setAccuracy(NaN);
   };
 
   useEffect(() => {
     async function fetchGames() {
-      setLoading(true);
-
       const data = await getMostPlayedGames();
       const pickedGame = pickRandomGame(data.response.ranks);
       const appId = pickedGame.appid;
@@ -38,11 +37,16 @@ export default function Home() {
 
       setPlayerCount(pickedGame.peak_in_game);
       setGameName(gameName);
-
-      setLoading(false);
     }
 
-    fetchGames();
+    try {
+      setLoading(true);
+      fetchGames();
+    } catch (error) {
+      console.error("Error fetching data from Steam API:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   if (loading) {
@@ -59,7 +63,9 @@ export default function Home() {
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <div className="flex gap-4 items-center flex-col">
-          <p>Guess the peak player count of the last 24 hours for</p>
+          <p className="text-center text-xl font-bold">
+            Guess the peak player count of the last 24 hours for
+          </p>
 
           <h2 className="text-2xl font-bold text-center text-indigo-500">
             {gameName}
@@ -72,17 +78,24 @@ export default function Home() {
           <input
             type="number"
             placeholder="Your guess"
-            value={guess}
+            value={isNaN(guess) ? "" : guess}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded-md w-32 text-center text-black"
           />
 
           <button
             onClick={handleSubmit}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
+            disabled={isNaN(guess)}
           >
             Guess!
           </button>
+
+          {accuracy === 0 && (
+            <p className="text-center text-2xl">
+              Your guess is too low. Try again!
+            </p>
+          )}
 
           {accuracy > 0 && accuracy <= 100 && (
             <p className="text-center text-2xl">
