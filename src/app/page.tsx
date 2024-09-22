@@ -14,22 +14,46 @@ export default function Home() {
   const [playerCount, setPlayerCount] = useState<number>(0);
   const [gameName, setGameName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+  const [tries, setTries] = useState<number[]>([]);
+  const [triesLeft, setTriesLeft] = useState<number>(3);
+  const [feedback, setFeedback] = useState<string>("");
 
   const handleSubmit = () => {
-    const accuracy = calculateGuessAccuracy(guess, playerCount);
-    setAccuracy(accuracy);
+    const newAccuracy = calculateGuessAccuracy(guess, playerCount);
+    setTries([...tries, guess]);
+
+    if (newAccuracy < 95) {
+      setFeedback(newAccuracy < 100 ? "Keep trying! The number should be higher." : "Keep trying! The number should be lower.");
+      setGuess(NaN);
+    } else if (newAccuracy >= 95 && newAccuracy <= 100) {
+      setAccuracy(newAccuracy);
+      setFeedback("Great guess!");
+      setTriesLeft(0);
+    } else {
+      setFeedback("Keep trying! The number should be lower.");
+      setGuess(NaN);
+    }
+
+    if (triesLeft > 1) {
+      setTriesLeft(triesLeft - 1);
+    } else {
+      setAccuracy(newAccuracy);
+      setTriesLeft(0);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value === "" ? NaN : parseInt(e.target.value);
     setGuess(value);
-    setAccuracy(NaN);
   };
 
   const handleNewGame = () => {
     setLoading(true);
     setGuess(NaN);
     setAccuracy(NaN);
+    setTries([]);
+    setTriesLeft(3);
+    setFeedback("");
     fetchGames();
   };
 
@@ -87,50 +111,40 @@ export default function Home() {
             <button
               onClick={handleSubmit}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-r-md transition duration-150 ease-in-out disabled:bg-gray-600 disabled:cursor-not-allowed"
-              disabled={isNaN(guess)}
+              disabled={isNaN(guess) || triesLeft === 0}
             >
               Guess!
             </button>
           </div>
           <p className="text-sm text-gray-400 text-center">
-            Value is rounded to the nearest whole number.
+            Value is rounded to the nearest whole number. You have {triesLeft} tries left.
           </p>
-          {!isNaN(accuracy) && (
+          {feedback && (
+            <p className="text-center text-lg text-yellow-400">{feedback}</p>
+          )}
+          {triesLeft === 0 && (
             <div className="mt-6 p-4 bg-gray-700 rounded-md">
-              {accuracy === 0 && (
-                <p className="text-center text-xl text-red-400">
-                  Your guess is too low. Try again!
+              <div className="text-center">
+                <p className="text-xl text-gray-200">
+                  The <strong>correct</strong> peak player count was{" "}
+                  <strong className="text-green-400">{playerCount}</strong>.
                 </p>
-              )}
-              {accuracy > 0 && accuracy <= 100 && (
-                <div className="text-center">
-                  <p className="text-xl text-gray-200">
-                    The <strong>correct</strong> peak player count was{" "}
-                    <strong className="text-green-400">{playerCount}</strong>.
-                  </p>
-                  <p className="text-lg mt-2 text-gray-300">
-                    Your guess of {guess} was{" "}
-                    <span
-                      className={
-                        accuracy > 90
-                          ? "text-green-400"
-                          : accuracy > 70
-                          ? "text-yellow-400"
-                          : "text-red-400"
-                      }
-                    >
-                      {accuracy}% accurate
-                    </span>
-                    .
-                  </p>
-                </div>
-              )}
-              {accuracy > 100 && (
-                <p className="text-center text-xl text-red-400">
-                  Your guess was too high! The correct peak player count was{" "}
-                  <span className="text-green-400">{playerCount}</span>.
+                <p className="text-lg mt-2 text-gray-300">
+                  Your final guess of {tries[tries.length - 1]} was{" "}
+                  <span
+                    className={
+                      accuracy > 90
+                        ? "text-green-400"
+                        : accuracy > 70
+                        ? "text-yellow-400"
+                        : "text-red-400"
+                    }
+                  >
+                    {accuracy.toFixed(2)}% accurate
+                  </span>
+                  .
                 </p>
-              )}
+              </div>
             </div>
           )}
           <div className="flex justify-center mt-6">
@@ -141,6 +155,18 @@ export default function Home() {
               New Game
             </button>
           </div>
+          {tries.length > 0 && (
+            <div className="mt-6 p-4 bg-gray-700 rounded-md">
+              <h3 className="text-lg font-bold text-indigo-300 mb-2">Your Guesses:</h3>
+              <ul className="list-disc list-inside">
+                {tries.map((try_, index) => (
+                  <li key={index} className="text-gray-300">
+                    Try {index + 1}: {try_}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
