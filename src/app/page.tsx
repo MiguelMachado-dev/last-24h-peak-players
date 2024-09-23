@@ -1,10 +1,7 @@
 "use client";
 
 import { fetchGameDetails } from "@/utils/game";
-import {
-  getMostPlayedGames,
-  pickRandomGame,
-} from "@/utils/guess";
+import { getMostPlayedGames, pickRandomGame } from "@/utils/guess";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -28,18 +25,21 @@ export default function Home() {
     setTries([...tries, guess]);
 
     if (newScore < 950) {
-      setFeedback(guess < playerCount ? "Keep trying! The number should be higher." : "Keep trying! The number should be lower.");
+      setFeedback(
+        guess < playerCount
+          ? "Keep trying! The number should be higher."
+          : "Keep trying! The number should be lower."
+      );
       setGuess(NaN);
+      if (triesLeft > 1) {
+        setTriesLeft(triesLeft - 1);
+      } else {
+        setScore(newScore);
+        setTriesLeft(0);
+      }
     } else {
       setScore(newScore);
       setFeedback("Great guess!");
-      setTriesLeft(0);
-    }
-
-    if (triesLeft > 1) {
-      setTriesLeft(triesLeft - 1);
-    } else {
-      setScore(newScore);
       setTriesLeft(0);
     }
   };
@@ -107,21 +107,23 @@ export default function Home() {
             {gameName}
           </h2>
           <div className="flex justify-center">
-            <input
-              type="number"
-              step="any"
-              placeholder="Your guess"
-              value={isNaN(guess) ? "" : guess}
-              onChange={handleChange}
-              className="p-2 border border-gray-600 rounded-l-md w-32 text-center text-white bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              onClick={handleSubmit}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-r-md transition duration-150 ease-in-out disabled:bg-gray-600 disabled:cursor-not-allowed"
-              disabled={isNaN(guess) || triesLeft === 0}
-            >
-              Guess!
-            </button>
+            <form>
+              <input
+                type="number"
+                step="any"
+                placeholder="Your guess"
+                value={isNaN(guess) ? "" : guess}
+                onChange={handleChange}
+                className="p-2 border border-gray-600 rounded-l-md w-32 text-center text-white bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={handleSubmit}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-r-md transition duration-150 ease-in-out disabled:bg-gray-600 disabled:cursor-not-allowed"
+                disabled={isNaN(guess) || triesLeft === 0}
+              >
+                Guess!
+              </button>
+            </form>
           </div>
           <p className="text-sm text-gray-400 text-center">
             You have {triesLeft} tries left.
@@ -163,22 +165,24 @@ export default function Home() {
             </button>
           </div>
           {tries.length > 0 && (
-          <div className="mt-6 p-4 bg-gray-700 rounded-md">
-            <h3 className="text-lg font-bold text-indigo-300 mb-2">Your Guesses:</h3>
-            <div className="space-y-1">
-              {tries.map((try_, index) => (
-                <div
-                  key={index}
-                  className={`text-gray-300 ${
-                    index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
-                  } p-2 rounded`}
-                >
-                  Try {index + 1}: {try_} {getGuessEmoji(try_, playerCount)}
-                </div>
-              ))}
+            <div className="mt-6 p-4 bg-gray-700 rounded-md">
+              <h3 className="text-lg font-bold text-indigo-300 mb-2">
+                Your Guesses:
+              </h3>
+              <div className="space-y-1">
+                {tries.map((try_, index) => (
+                  <div
+                    key={index}
+                    className={`text-gray-300 ${
+                      index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
+                    } p-2 rounded`}
+                  >
+                    Try {index + 1}: {try_} {getGuessEmoji(try_, playerCount)}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>
