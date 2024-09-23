@@ -1,11 +1,12 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { fetchGameDetails } from "@/utils/game";
 import { getMostPlayedGames, pickRandomGame } from "@/utils/guess";
-import { useEffect, useState } from "react";
+import { formatNumber, parseFormattedNumber } from "@/utils/number";
 
 export default function Home() {
-  const [guess, setGuess] = useState<number>(NaN);
+  const [guess, setGuess] = useState<string>("");
   const [score, setScore] = useState<number>(0);
   const [playerCount, setPlayerCount] = useState<number>(0);
   const [gameName, setGameName] = useState<string>("");
@@ -21,16 +22,17 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    const newScore = calculateScore(guess, playerCount);
-    setTries([...tries, guess]);
+    const guessNumber = parseFormattedNumber(guess);
+    const newScore = calculateScore(guessNumber, playerCount);
+    setTries([...tries, guessNumber]);
 
     if (newScore < 950) {
       setFeedback(
-        guess < playerCount
+        guessNumber < playerCount
           ? "Keep trying! The number should be higher."
           : "Keep trying! The number should be lower."
       );
-      setGuess(NaN);
+      setGuess("");
       if (triesLeft > 1) {
         setTriesLeft(triesLeft - 1);
       } else {
@@ -45,13 +47,18 @@ export default function Home() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === "" ? NaN : parseFloat(e.target.value);
-    setGuess(value);
+    const value = e.target.value.replace(/\D/g, "");
+    if (value === "") {
+      setGuess("");
+    } else {
+      const number = parseInt(value, 10);
+      setGuess(formatNumber(number));
+    }
   };
 
   const handleNewGame = () => {
     setLoading(true);
-    setGuess(NaN);
+    setGuess("");
     setScore(0);
     setTries([]);
     setTriesLeft(3);
@@ -107,19 +114,18 @@ export default function Home() {
             {gameName}
           </h2>
           <div className="flex justify-center">
-            <form>
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
               <input
-                type="number"
-                step="any"
+                type="text"
                 placeholder="Your guess"
-                value={isNaN(guess) ? "" : guess}
+                value={guess}
                 onChange={handleChange}
                 className="p-2 border border-gray-600 rounded-l-md w-32 text-center text-white bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <button
-                onClick={handleSubmit}
+                type="submit"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-r-md transition duration-150 ease-in-out disabled:bg-gray-600 disabled:cursor-not-allowed"
-                disabled={isNaN(guess) || triesLeft === 0}
+                disabled={guess === "" || triesLeft === 0}
               >
                 Guess!
               </button>
@@ -136,10 +142,10 @@ export default function Home() {
               <div className="text-center">
                 <p className="text-xl text-gray-200">
                   The <strong>correct</strong> peak player count was{" "}
-                  <strong className="text-green-400">{playerCount}</strong>.
+                  <strong className="text-green-400">{formatNumber(playerCount)}</strong>.
                 </p>
                 <p className="text-lg mt-2 text-gray-300">
-                  Your final guess of {tries[tries.length - 1]} scored{" "}
+                  Your final guess of {formatNumber(tries[tries.length - 1])} scored{" "}
                   <span
                     className={
                       score > 900
@@ -177,7 +183,8 @@ export default function Home() {
                       index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
                     } p-2 rounded`}
                   >
-                    Try {index + 1}: {try_} {getGuessEmoji(try_, playerCount)}
+                    Try {index + 1}: {formatNumber(try_)}{" "}
+                    {getGuessEmoji(try_, playerCount)}
                   </div>
                 ))}
               </div>
