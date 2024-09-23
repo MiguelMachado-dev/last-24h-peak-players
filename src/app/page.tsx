@@ -2,7 +2,6 @@
 
 import { fetchGameDetails } from "@/utils/game";
 import {
-  calculateGuessAccuracy,
   getMostPlayedGames,
   pickRandomGame,
 } from "@/utils/guess";
@@ -10,7 +9,7 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const [guess, setGuess] = useState<number>(NaN);
-  const [accuracy, setAccuracy] = useState<number>(NaN);
+  const [score, setScore] = useState<number>(0);
   const [playerCount, setPlayerCount] = useState<number>(0);
   const [gameName, setGameName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -18,39 +17,42 @@ export default function Home() {
   const [triesLeft, setTriesLeft] = useState<number>(3);
   const [feedback, setFeedback] = useState<string>("");
 
+  const calculateScore = (guess: number, actual: number): number => {
+    const percentDifference = Math.abs((guess - actual) / actual) * 100;
+    const score = Math.max(0, 1000 - percentDifference * 10);
+    return Math.round(score);
+  };
+
   const handleSubmit = () => {
-    const newAccuracy = calculateGuessAccuracy(guess, playerCount);
+    const newScore = calculateScore(guess, playerCount);
     setTries([...tries, guess]);
 
-    if (newAccuracy < 95) {
-      setFeedback(newAccuracy < 100 ? "Keep trying! The number should be higher." : "Keep trying! The number should be lower.");
+    if (newScore < 950) {
+      setFeedback(guess < playerCount ? "Keep trying! The number should be higher." : "Keep trying! The number should be lower.");
       setGuess(NaN);
-    } else if (newAccuracy >= 95 && newAccuracy <= 100) {
-      setAccuracy(newAccuracy);
+    } else {
+      setScore(newScore);
       setFeedback("Great guess!");
       setTriesLeft(0);
-    } else {
-      setFeedback("Keep trying! The number should be lower.");
-      setGuess(NaN);
     }
 
     if (triesLeft > 1) {
       setTriesLeft(triesLeft - 1);
     } else {
-      setAccuracy(newAccuracy);
+      setScore(newScore);
       setTriesLeft(0);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === "" ? NaN : parseInt(e.target.value);
+    const value = e.target.value === "" ? NaN : parseFloat(e.target.value);
     setGuess(value);
   };
 
   const handleNewGame = () => {
     setLoading(true);
     setGuess(NaN);
-    setAccuracy(NaN);
+    setScore(0);
     setTries([]);
     setTriesLeft(3);
     setFeedback("");
@@ -73,6 +75,10 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getGuessEmoji = (guess: number, actual: number) => {
+    return guess < actual ? "⬆️" : guess > actual ? "⬇️" : "✅";
   };
 
   useEffect(() => {
@@ -103,6 +109,7 @@ export default function Home() {
           <div className="flex justify-center">
             <input
               type="number"
+              step="any"
               placeholder="Your guess"
               value={isNaN(guess) ? "" : guess}
               onChange={handleChange}
@@ -117,9 +124,9 @@ export default function Home() {
             </button>
           </div>
           <p className="text-sm text-gray-400 text-center">
-            Value is rounded to the nearest whole number. You have {triesLeft} tries left.
+            You have {triesLeft} tries left.
           </p>
-          {feedback && (
+          {triesLeft !== 0 && feedback && (
             <p className="text-center text-lg text-yellow-400">{feedback}</p>
           )}
           {triesLeft === 0 && (
@@ -130,17 +137,17 @@ export default function Home() {
                   <strong className="text-green-400">{playerCount}</strong>.
                 </p>
                 <p className="text-lg mt-2 text-gray-300">
-                  Your final guess of {tries[tries.length - 1]} was{" "}
+                  Your final guess of {tries[tries.length - 1]} scored{" "}
                   <span
                     className={
-                      accuracy > 90
+                      score > 900
                         ? "text-green-400"
-                        : accuracy > 70
+                        : score > 700
                         ? "text-yellow-400"
                         : "text-red-400"
                     }
                   >
-                    {accuracy.toFixed(2)}% accurate
+                    {score} points
                   </span>
                   .
                 </p>
@@ -156,17 +163,22 @@ export default function Home() {
             </button>
           </div>
           {tries.length > 0 && (
-            <div className="mt-6 p-4 bg-gray-700 rounded-md">
-              <h3 className="text-lg font-bold text-indigo-300 mb-2">Your Guesses:</h3>
-              <ul className="list-disc list-inside">
-                {tries.map((try_, index) => (
-                  <li key={index} className="text-gray-300">
-                    Try {index + 1}: {try_}
-                  </li>
-                ))}
-              </ul>
+          <div className="mt-6 p-4 bg-gray-700 rounded-md">
+            <h3 className="text-lg font-bold text-indigo-300 mb-2">Your Guesses:</h3>
+            <div className="space-y-1">
+              {tries.map((try_, index) => (
+                <div
+                  key={index}
+                  className={`text-gray-300 ${
+                    index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
+                  } p-2 rounded`}
+                >
+                  Try {index + 1}: {try_} {getGuessEmoji(try_, playerCount)}
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </div>
